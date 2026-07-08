@@ -15,61 +15,7 @@
     --reader-font-size: 18px;
     --reader-line-height: 1.8;
 }
-/* =========================================
-   БРЕНДИНГ И ПСЕВДОНИМ
-   ========================================= */
-.header-brand {
-    display: flex;
-    align-items: baseline;
-    gap: 15px;
-}
 
-.author-pseudonym {
-    font-family: var(--font-serif);
-    font-size: 1.2rem;
-    font-style: italic;
-    color: var(--accent-color);
-    font-weight: 400;
-    opacity: 0.9;
-}
-
-/* =========================================
-   ЦИТАТА НА ГЛАВНОЙ
-   ========================================= */
-.hero-quote {
-    margin-top: 40px;
-    padding: 30px 0;
-    border-top: 1px solid var(--border-color);
-    transition: border-color var(--transition-speed) ease;
-}
-
-.hero-quote p {
-    font-family: var(--font-serif);
-    font-size: 1.15rem;
-    line-height: 1.8;
-    color: var(--text-secondary);
-    font-style: italic;
-    max-width: 900px;
-}
-[data-theme="dark"] {
-    --bg-primary: #121212;
-    --bg-secondary: #1E1E1E;
-    --text-primary: #E0E0E0;
-    --text-secondary: #999999;
-    --accent-color: #D4AF37;
-    --border-color: #333333;
-    --card-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="sepia"] {
-    --bg-primary: #F4ECD8;
-    --bg-secondary: #FAF6EB;
-    --text-primary: #3E2C1C;
-    --text-secondary: #6B5744;
-    --accent-color: #8B4513;
-    --border-color: #D5C4A1;
-    --card-shadow: 0 2px 15px rgba(62, 44, 28, 0.1);
-}
 
 /* =========================================
    БАЗОВЫЕ СТИЛИ
@@ -181,6 +127,54 @@ h1 {
 .filter-btn:hover {
     color: var(--text-primary);
 }
+
+/* =========================================
+   БРЕНДИНГ И ПСЕВДОНИМ
+   ========================================= */
+.header-brand {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+}
+
+.author-pseudonym {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    font-style: italic;
+    color: var(--accent-color);
+    font-weight: 400;
+    opacity: 0.9;
+}
+/* =========================================
+   ЦИТАТА НА ГЛАВНОЙ
+   ========================================= */
+.hero-quote {
+    margin-top: 40px;
+    padding: 30px 0;
+    border-top: 1px solid var(--border-color);
+    transition: border-color var(--transition-speed) ease;
+}
+
+.hero-quote p {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    font-style: italic;
+    max-width: 900px;
+}
+
+/* Адаптивность для мобильных, чтобы имя не съезжало */
+@media (max-width: 600px) {
+    .header-brand {
+        flex-direction: column;
+        gap: 5px;
+    }
+    .hero-quote p {
+        font-size: 1.05rem;
+    }
+}
+
 
 /* =========================================
    КАРТОЧКИ КАТАЛОГА
