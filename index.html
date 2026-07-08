@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Библиотека — Портфолио рассказов</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1>Библиотека</h1>
+                <div class="header-controls">
+                    <a href="stats.html" class="btn" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>
+                        Статистика
+                    </a>
+                    <select id="theme-selector" class="btn">
+                        <option value="light">Светлая</option>
+                        <option value="dark">Темная</option>
+                        <option value="sepia">Сепия</option>
+                    </select>
+                </div>
+            </div>
+            <nav class="filters" id="filters-container"></nav>
+        </header>
+
+        <main class="grid" id="stories-grid"></main>
+    </div>
+
+    <div class="stats-bar" id="stats-bar">
+        <div>Прочитано минут: <span id="total-minutes">0</span></div>
+        <div>Завершено: <span id="finished-stories">0</span></div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

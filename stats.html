@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика — Портфолио рассказов</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="stats-header">
+            <div class="header-top" style="margin-bottom: 0;">
+                <a href="index.html" class="btn" style="text-decoration: none;">← Назад к каталогу</a>
+                <div class="header-controls">
+                    <select id="theme-selector-stats" class="btn">
+                        <option value="light">Светлая</option>
+                        <option value="dark">Темная</option>
+                        <option value="sepia">Сепия</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <section class="stats-hero">
+            <h1>Ваша статистика</h1>
+            <p>Погружение в истории оставляет след</p>
+        </section>
+
+        <!-- Оставили только две главные метрики -->
+        <div class="metrics-grid metrics-grid-minimal">
+            <div class="metric-card">
+                <div class="metric-val" id="total-time">0</div>
+                <div class="metric-label">Минут прочитано</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-val" id="total-stories">0</div>
+                <div class="metric-label">Рассказов завершено</div>
+            </div>
+        </div>
+
+        <!-- Список прочитанного -->
+        <div class="section-container">
+            <h2 class="section-title">Завершенные рассказы</h2>
+            <div id="finished-list"></div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="stats.js"></script>
+</body>
+</html>

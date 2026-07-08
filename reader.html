@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чтение — Портфолио рассказов</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Полоска прогресса чтения (в самом верху) -->
+    <div id="reading-progress-bar"></div>
+
+    <div class="reader-layout">
+        <!-- Боковая панель настроек -->
+        <aside class="reader-sidebar">
+            <a href="index.html" class="btn" style="text-decoration: none; text-align: center;">← Назад к каталогу</a>
+            
+            <div class="setting-group">
+                <div class="setting-label">Тема оформления</div>
+                <select id="reader-theme" class="btn" style="width: 100%;">
+                    <option value="light">Светлая</option>
+                    <option value="dark">Темная</option>
+                    <option value="sepia">Сепия</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Размер шрифта</div>
+                <div class="control-row">
+                    <button class="btn-circle" id="font-decrease">−</button>
+                    <span id="font-size-value" class="control-value">18px</span>
+                    <button class="btn-circle" id="font-increase">+</button>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Межстрочный интервал</div>
+                <div class="control-row">
+                    <button class="btn-circle" id="line-decrease">−</button>
+                    <span id="line-height-value" class="control-value">1.8</span>
+                    <button class="btn-circle" id="line-increase">+</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Область текста -->
+        <main class="reader-content">
+            <h1 class="reader-title" id="r-title">Загрузка...</h1>
+            <div class="reader-meta" id="r-meta"></div>
+            <div class="reader-text" id="r-body"></div>
+        </main>
+    </div>
+
+    <!-- ТАЙМЕР И КНОПКА: Обязательно лежат прямо внутри <body>, вне других контейнеров! -->
+    <div id="finish-read-container">
+        <span id="timer-display" class="timer-text">0:00</span>
+        <button id="btn-finish-read">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Готово
+        </button>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="reader.js"></script>
+</body>
+</html>
