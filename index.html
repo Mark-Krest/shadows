@@ -15,7 +15,10 @@
     <div class="container">
         <header>
             <div class="header-top">
-                <h1>Библиотека</h1>
+                <div class="header-brand">
+                    <h1>Библиотека</h1>
+                    <span class="author-pseudonym">Д. Крест</span>
+                </div>
                 <div class="header-controls">
                     <a href="stats.html" class="btn" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>
@@ -28,7 +31,13 @@
                     </select>
                 </div>
             </div>
+            
             <nav class="filters" id="filters-container"></nav>
+
+            <!-- Блок с цитатой -->
+            <div class="hero-quote">
+                <p>«Мы думаем, что у нас есть время на отладку, будто жизнь — это тестовая среда, где можно перезапустить неудачный сценарий. Но это не песочница. Это продакшн, и баги в нашем мышлении, в наших решениях, в том, как мы обращаемся с близкими, имеют реальные последствия. Каждый день — это коммит, который нельзя отменить. Так пусть хотя бы этот коммит будет честным»</p>
+            </div>
         </header>
 
         <main class="grid" id="stories-grid"></main>
