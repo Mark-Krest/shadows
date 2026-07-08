@@ -76,3 +76,21 @@ document.addEventListener('DOMContentLoaded', function() {
         finishedList.innerHTML = finishedHTML;
     }
 });
+
+// Логика кнопки "Наверх" для страницы статистики
+document.addEventListener('DOMContentLoaded', function() {
+    var scrollTopBtn = document.getElementById('scroll-to-top-btn');
+    if (scrollTopBtn) {
+        window.addEventListener('scroll', function() {
+            if (document.body.scrollTop > 400 || document.documentElement.scrollTop > 400) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        });
+
+        scrollTopBtn.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+});
