@@ -130,15 +130,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     toggleQuoteBtn.addEventListener('click', function() {
         isQuoteVisible = !isQuoteVisible;
+        
         if (isQuoteVisible) {
+            // РАЗВОРАЧИВАЕМ
+            heroQuote.classList.remove('collapsed'); // Убираем класс, где padding: 0
+            
+            // Задаем точную текущую высоту, чтобы анимация стартовала оттуда
             heroQuote.style.maxHeight = heroQuote.scrollHeight + 'px';
+            
+            // После завершения анимации убираем ограничение высоты
+            setTimeout(function() { 
+                heroQuote.style.maxHeight = 'none'; 
+            }, 500);
+            
             quoteToggleText.textContent = 'Скрыть цитату';
             quoteChevron.style.transform = 'rotate(0deg)';
-            setTimeout(function() { heroQuote.style.maxHeight = 'none'; }, 500);
         } else {
+            // СВОРАЧИВАЕМ
+            // Фиксируем текущую высоту
             heroQuote.style.maxHeight = heroQuote.scrollHeight + 'px';
-            heroQuote.offsetHeight; // Перезагрузка браузера для анимации
+            // Принудительно перерисовываем браузер, чтобы он зафиксировал высоту
+            heroQuote.offsetHeight; 
+            
+            // Добавляем класс (обнуляет padding и делает текст прозрачным) и задаем 0 высоты
+            heroQuote.classList.add('collapsed');
             heroQuote.style.maxHeight = '0px';
+            
             quoteToggleText.textContent = 'Показать цитату';
             quoteChevron.style.transform = 'rotate(-90deg)';
         }
