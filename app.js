@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
     
-    // Загружаем состояние из памяти браузера
     var state = {
         currentTheme: localStorage.getItem('theme') || 'light',
         currentFilter: 'Все',
@@ -8,14 +7,11 @@ document.addEventListener('DOMContentLoaded', function() {
         progress: JSON.parse(localStorage.getItem('readingProgress')) || {}
     };
 
-    // Находим основные элементы на странице
     var grid = document.getElementById('stories-grid');
     var filtersContainer = document.getElementById('filters-container');
     var themeSelector = document.getElementById('theme-selector');
-    var totalMinutesEl = document.getElementById('total-minutes');
-    var finishedStoriesEl = document.getElementById('finished-stories');
+    var searchInput = document.getElementById('search-input');
 
-    // Функция отрисовки кнопок фильтров
     function renderFilters() {
         filtersContainer.innerHTML = '';
         for (var i = 0; i < GENRES.length; i++) {
@@ -25,7 +21,6 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.textContent = genre;
             
             btn.addEventListener('click', function() {
-                // Используем замыкание, чтобы сохранить правильное значение genre
                 state.currentFilter = this.textContent;
                 renderFilters();
                 renderGrid();
@@ -35,7 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Функция получения статуса рассказа для бейджа
     function getStatusHTML(storyId) {
         if (state.stats.finishedIds.indexOf(storyId) !== -1) {
             return '<div class="status-badge read">Прочитано</div>';
@@ -46,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return '<div class="status-badge">Новое</div>';
     }
 
-    // Функция запуска процесса рендеринга сетки (с анимацией выхода)
     function renderGrid() {
         var existingCards = grid.querySelectorAll('.card');
         
@@ -60,18 +53,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Функция непосредственной отрисовки карточек
     function buildNewGrid() {
         grid.innerHTML = '';
         
         var filteredStories = [];
-        if (state.currentFilter === 'Все') {
-            filteredStories = STORIES;
-        } else {
-            for (var i = 0; i < STORIES.length; i++) {
-                if (STORIES[i].genre === state.currentFilter) {
-                    filteredStories.push(STORIES[i]);
-                }
+        var searchText = searchInput.value.toLowerCase().trim();
+        
+        for (var i = 0; i < STORIES.length; i++) {
+            var story = STORIES[i];
+            var matchGenre = state.currentFilter === 'Все' || story.genre === state.currentFilter;
+            var matchSearch = searchText === '' || story.title.toLowerCase().indexOf(searchText) !== -1;
+            
+            if (matchGenre && matchSearch) {
+                filteredStories.push(story);
             }
         }
 
@@ -92,7 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     getStatusHTML(story.id) +
                 '</div>';
 
-            // Обработчик перехода на страницу чтения
             function openReader() {
                 window.location.href = 'reader.html?id=' + story.id;
             }
@@ -106,28 +99,67 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (filteredStories.length === 0) {
-            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Нет рассказов в этом жанре.</p>';
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Ничего не найдено.</p>';
         }
     }
 
-    // Функция применения темы
     function applyTheme() {
         document.documentElement.setAttribute('data-theme', state.currentTheme);
         themeSelector.value = state.currentTheme;
         localStorage.setItem('theme', state.currentTheme);
     }
 
-    // Слушатель изменения темы
+    // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
+
     themeSelector.addEventListener('change', function(e) {
         state.currentTheme = e.target.value;
         applyTheme();
     });
 
-    // Обновление плашки статистики
-    totalMinutesEl.textContent = state.stats.totalMinutes;
-    finishedStoriesEl.textContent = state.stats.finishedIds.length;
+    // Поиск в реальном времени
+    searchInput.addEventListener('input', function() {
+        renderGrid();
+    });
 
-    // Запуск
+    // --- СКРЫТИЕ/ПОКАЗ ЦИТАТЫ ---
+    var toggleQuoteBtn = document.getElementById('toggle-quote-btn');
+    var heroQuote = document.getElementById('hero-quote');
+    var quoteToggleText = document.getElementById('quote-toggle-text');
+    var quoteChevron = document.querySelector('.quote-chevron');
+    var isQuoteVisible = true;
+
+    toggleQuoteBtn.addEventListener('click', function() {
+        isQuoteVisible = !isQuoteVisible;
+        if (isQuoteVisible) {
+            heroQuote.style.maxHeight = heroQuote.scrollHeight + 'px';
+            quoteToggleText.textContent = 'Скрыть цитату';
+            quoteChevron.style.transform = 'rotate(0deg)';
+            setTimeout(function() { heroQuote.style.maxHeight = 'none'; }, 500);
+        } else {
+            heroQuote.style.maxHeight = heroQuote.scrollHeight + 'px';
+            heroQuote.offsetHeight; // Перезагрузка браузера для анимации
+            heroQuote.style.maxHeight = '0px';
+            quoteToggleText.textContent = 'Показать цитату';
+            quoteChevron.style.transform = 'rotate(-90deg)';
+        }
+    });
+
+    // --- КНОПКА "НАВЕРХ" ---
+    var scrollTopBtn = document.getElementById('scroll-to-top-btn');
+    
+    window.addEventListener('scroll', function() {
+        if (document.body.scrollTop > 400 || document.documentElement.scrollTop > 400) {
+            scrollTopBtn.classList.add('visible');
+        } else {
+            scrollTopBtn.classList.remove('visible');
+        }
+    });
+
+    scrollTopBtn.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // --- ЗАПУСК ---
     applyTheme();
     renderFilters();
     renderGrid();
