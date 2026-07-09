@@ -118,10 +118,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 '</div>';
 
             // Сохраняем правильный ID рассказа для функции перехода (чтобы не сбивалось в цикле)
-            var targetUrl = 'reader.html?id=' + story.id;
-            
+            // Используем let, чтобы "заморозить" ID рассказа для каждой карточки навсегда
+            let currentStoryId = story.id;
             function openReader() {
-                window.location.href = targetUrl;
+                window.location.href = 'reader.html?id=' + currentStoryId;
             }
 
             card.addEventListener('click', openReader);
