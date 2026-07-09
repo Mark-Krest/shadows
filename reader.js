@@ -92,16 +92,10 @@ document.addEventListener('DOMContentLoaded', function() {
         finishButton.addEventListener('click', function() {
             // 1. Останавливаем таймер
             clearInterval(timerInterval);
-            
-            // 2. Переводим секунды в минуты (округляем в большую сторону, если прошло больше 30 сек)
-            var realMinutesSpent = Math.ceil(secondsSpent / 60);
-            if (realMinutesSpent < 1) realMinutesSpent = 1; // Минимум 1 минута
-            
+            // 2. Сохраняем точное количество затраченных секунд
             // 3. Сохраняем статистику
             statsData.finishedIds.push(story.id);
-            statsData.totalMinutes += realMinutesSpent; // Прибавляем РЕАЛЬНОЕ время
-            localStorage.setItem('readingStats', JSON.stringify(statsData));
-            
+            statsData.totalSeconds += secondsSpent; // Прибавляем РЕАЛЬНЫЕ секунды
             // 4. Плавно прячем контейнер с таймером и кнопкой
             finishContainer.style.opacity = '0';
             setTimeout(function() { 
