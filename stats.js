@@ -1,13 +1,21 @@
 document.addEventListener('DOMContentLoaded', function() {
     
-    // Загружаем данные из памяти браузера
-    var stats = JSON.parse(localStorage.getItem('readingStats')) || { totalSeconds: 0, finishedIds: [] };
-    // Если у старых пользователей есть totalMinutes (от прошлых версий), переносим их в секунды
-    if (stats.totalMinutes && !stats.totalSeconds) {
-        stats.totalSeconds = stats.totalMinutes * 60;
+    // 1. Загружаем данные из памяти
+    var stats = JSON.parse(localStorage.getItem('readingStats')) || { finishedIds: [] };
+
+    // 2. ОДНОРАЗОВАЯ МИГРАЦИЯ ДАННЫХ
+    // Если есть старые минуты, переносим их в секунды и НАВСЕГДА удаляем переменную totalMinutes
+    if (typeof stats.totalMinutes !== 'undefined') {
+        if (typeof stats.totalSeconds === 'undefined') {
+            stats.totalSeconds = stats.totalMinutes * 60;
+        }
+        // Удаляем totalMinutes из объекта, чтобы она больше никогда не мешала
+        delete stats.totalMinutes;
+        // Сохраняем очищенный объект
         localStorage.setItem('readingStats', JSON.stringify(stats));
     }
-    // Настройка темы
+
+    // 3. Настройка темы
     var currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
     var themeSel = document.getElementById('theme-selector-stats');
@@ -18,49 +26,45 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('theme', e.target.value);
         });
     }
-    // Получаем значения
+
+    // 4. Получаем значения
     var finishedCount = stats.finishedIds.length;
     var totalSeconds = stats.totalSeconds || 0;
 
-    // Функция для красивого форматирования времени (например, "4 мин 36 сек" или "1 мин 05 сек")
+    // 5. Функция для красивого форматирования времени
     function formatTime(totalSec) {
         var mins = Math.floor(totalSec / 60);
         var secs = totalSec % 60;
-        var secsStr = secs < 10 ? '0' + secs : secs; // Добавляем ноль спереди, если секунд меньше 10
+        var secsStr = secs < 10 ? '0' + secs : secs;
         
         if (mins === 0) {
-            return secs + ' сек'; // Если прочитал меньше минуты
+            return secs + ' сек'; 
         }
         return mins + ' мин ' + secsStr + ' сек';
     }
-    // Функция анимации счета теперь работает с текстом, а не просто цифрами
+
+    // 6. Функция анимации времени
     function animateTime(element, endSeconds) {
-        var startSeconds = 0;
-        var duration = 1000; // 1 секунда анимации
+        var duration = 1000;
         var startTime = null;
         function step(timestamp) {
             if (!startTime) startTime = timestamp;
             var progressStep = Math.min((timestamp - startTime) / duration, 1);
-            
-            // Высчитываем текущее время для анимации
             var currentSec = Math.floor(progressStep * endSeconds);
             element.textContent = formatTime(currentSec);
-            
             if (progressStep < 1) {
                 requestAnimationFrame(step);
             } else {
-                // В конце ставим точное финальное значение
                 element.textContent = formatTime(endSeconds);
             }
         }
         requestAnimationFrame(step);
     }
-    // Анимация для количества рассказов (остается как было)
+
+    // 7. Функция анимации числа (рассказов)
     function animateValue(element, endValue) {
-        var startValue = 0;
         var duration = 1000;
         var startTime = null;
-        
         function step(timestamp) {
             if (!startTime) startTime = timestamp;
             var progressStep = Math.min((timestamp - startTime) / duration, 1);
@@ -73,15 +77,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         requestAnimationFrame(step);
     }
-    // Запускаем анимации
+
+    // 8. Запускаем анимации
     setTimeout(function() {
-        animateTime(document.getElementById('total-time'), totalSeconds);
-        animateValue(document.getElementById('total-stories'), finishedCount);
+        var timeEl = document.getElementById('total-time');
+        var storiesEl = document.getElementById('total-stories');
+        
+        if (timeEl) animateTime(timeEl, totalSeconds);
+        if (storiesEl) animateValue(storiesEl, finishedCount);
     }, 300);
-    // Отрисовка списка завершенных рассказов
+
+    // 9. Отрисовка списка завершенных рассказов
     var finishedList = document.getElementById('finished-list');
+    if (!finishedList) return; // Защита, если элемента нет на странице
+
     var finishedHTML = '';
     var hasFinished = false;
+
     for (var i = 0; i < STORIES.length; i++) {
         var story = STORIES[i];
         if (stats.finishedIds.indexOf(story.id) !== -1) {
@@ -99,6 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 '</div>';
         }
     }
+
     if (!hasFinished) {
         finishedList.innerHTML = '<p style="color: var(--text-secondary);">Вы еще не завершили ни одного рассказа.</p>';
     } else {
