@@ -54,31 +54,37 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000);
     }
 
-    // 4. БЕЗОПАСНАЯ РАЗБИВКА ТЕКСТА НА СТРАНИЦЫ
-    // Удаляем невидимые символы возврата каретки (остаются при копировании из Word/Windows)
+        // 4. БЕЗОПАСНАЯ РАЗБИВКА ТЕКСТА НА СТРАНИЦЫ (Автоматическая по символам)
+    // Удаляем невидимые символы переноса каретки из Word/Windows
     var cleanRawText = story.content.replace(/\r/g, '');
-    
-    // Разбиваем текст на абзацы по пустым строкам
-    var rawParagraphs = cleanRawText.split(/\n\s*\n/);
-    var paragraphsArray = [];
-    
-    // Очищаем абзацы от лишних пробелов по краям
-    for (var i = 0; i < rawParagraphs.length; i++) {
-        var cleanText = rawParagraphs[i].trim();
-        if (cleanText.length > 0) {
-            paragraphsArray.push(cleanText);
-        }
-    }
-
-    // Если текст был вставлен без пустых строк (сплошняком), разбиваем по одиночному Enter
-    if (paragraphsArray.length === 0) {
-        var fallbackParagraphs = cleanRawText.split('\n');
-        for (var i = 0; i < fallbackParagraphs.length; i++) {
-            var fbText = fallbackParagraphs[i].trim();
-            if (fbText.length > 0) {
-                paragraphsArray.push(fbText);
+    // Очищаем текст от двойных пробелов и пробелов вокруг тире/тире
+    var normalizedText = cleanRawText.replace(/\s+/g, ' ').replace(/ - /g, ' — ');
+    var charsPerPage = 600; // Сколько символов текста должно быть на одной странице (можно поменять)
+    var pages = [];
+    var currentPosition = 0;
+    // Нарезаем текст ровными кусками по 600 символов
+    while (currentPosition < normalizedText.length) {
+        // Вырезаем кусок текста
+        var pageText = normalizedText.substring(currentPosition, currentPosition + charsPerPage);
+        // УМНАЯ ОБРЕЗКА: Если мы разрезали текст посреди слова (последний символ не пробел),
+        // мы откатываемся назад, чтобы найти пробел и не разрывать слово пополам.
+        if (currentPosition + charsPerPage < normalizedText.length) {
+            var lastSpaceIndex = pageText.lastIndexOf(' ');
+            if (lastSpaceIndex > 0) {
+                pageText = pageText.substring(0, lastSpaceIndex);
+                currentPosition = currentPosition + lastSpaceIndex + 1; // +1 чтобы пропустить сам пробел
+            } else {
+                currentPosition += charsPerPage;
             }
+        } else {
+            currentPosition += charsPerPage;
         }
+        // Добавляем готовую страницу в массив
+        pages.push(pageText);
+    }
+    // Защита от пустых рассказов
+    if (pages.length === 0) {
+        pages.push("Текст рассказа отсутствует.");
     }
 
     // Группируем абзацы по страницам (сколько абзацев на одной странице)
