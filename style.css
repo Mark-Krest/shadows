@@ -155,12 +155,17 @@ h1 {
 .hero-quote {
     border-top: 1px solid var(--border-color);
     padding: 30px 0;
-    overflow: hidden;
-    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, padding 0.5s ease;
-    max-height: 500px; /* Начальная высота для анимации */
+    overflow: hidden; /* Гарантирует, что текст не вылезет за края при сворачивании */
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+                opacity 0.4s ease, 
+                padding 0.4s ease;
+    max-height: 500px; 
 }
 
-.hero-quote.collapsed { opacity: 0; padding-top: 0; padding-bottom: 0; }
+.hero-quote.collapsed { opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top: none; }
 
 .hero-quote p {
     font-family: var(--font-serif); font-size: 1.15rem; line-height: 1.8;
