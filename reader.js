@@ -26,9 +26,11 @@ document.addEventListener('DOMContentLoaded', function() {
         finishedIds: [] 
     };
     
-    // Совместимость со старыми версиями (если раньше сохранялись минуты)
+    // Совместимость со старыми версиями
     if (statsData.totalMinutes && !statsData.totalSeconds) {
         statsData.totalSeconds = statsData.totalMinutes * 60;
+        delete statsData.totalMinutes;
+        localStorage.setItem('readingStats', JSON.stringify(statsData));
     }
     
     var settings = JSON.parse(localStorage.getItem('readerSettings')) || { 
@@ -42,68 +44,69 @@ document.addEventListener('DOMContentLoaded', function() {
     var timerInterval = null;
     var timerDisplay = document.getElementById('timer-display');
     
-    // Проверяем, существует ли элемент таймера на странице
     if (timerDisplay) {
         timerInterval = setInterval(function() {
             secondsSpent++;
             var mins = Math.floor(secondsSpent / 60);
             var secs = secondsSpent % 60;
-            // Добавляем ноль спереди для эстетики (например, 0:05 вместо 0:5)
             var secsStr = secs < 10 ? '0' + secs : secs;
             timerDisplay.textContent = mins + ':' + secsStr;
         }, 1000);
     }
 
-        // 4. БЕЗОПАСНАЯ РАЗБИВКА ТЕКСТА НА СТРАНИЦЫ (Автоматическая по символам)
-    // Удаляем невидимые символы переноса каретки из Word/Windows
+    // 4. НОВАЯ НАДЕЖНАЯ РАЗБИВКА ТЕКСТА НА СТРАНИЦЫ (По абзацам и лимиту символов)
+    
+    // Удаляем невидимые символы (от Word/Windows), которые ломали код ранее
     var cleanRawText = story.content.replace(/\r/g, '');
-    // Очищаем текст от двойных пробелов и пробелов вокруг тире/тире
-    var normalizedText = cleanRawText.replace(/\s+/g, ' ').replace(/ - /g, ' — ');
-    var charsPerPage = 600; // Сколько символов текста должно быть на одной странице (можно поменять)
-    var pages = [];
-    var currentPosition = 0;
-    // Нарезаем текст ровными кусками по 600 символов
-    while (currentPosition < normalizedText.length) {
-        // Вырезаем кусок текста
-        var pageText = normalizedText.substring(currentPosition, currentPosition + charsPerPage);
-        // УМНАЯ ОБРЕЗКА: Если мы разрезали текст посреди слова (последний символ не пробел),
-        // мы откатываемся назад, чтобы найти пробел и не разрывать слово пополам.
-        if (currentPosition + charsPerPage < normalizedText.length) {
-            var lastSpaceIndex = pageText.lastIndexOf(' ');
-            if (lastSpaceIndex > 0) {
-                pageText = pageText.substring(0, lastSpaceIndex);
-                currentPosition = currentPosition + lastSpaceIndex + 1; // +1 чтобы пропустить сам пробел
-            } else {
-                currentPosition += charsPerPage;
-            }
-        } else {
-            currentPosition += charsPerPage;
+    
+    // Разбиваем текст на абзацы. Ищем одиночный перенос строки (\n), так как у тебя текст вставлен сплошняком
+    var rawParagraphs = cleanRawText.split('\n');
+    var paragraphsArray = [];
+    
+    // Очищаем абзацы от лишних пробелов по краям и удаляем пустые строки
+    for (var i = 0; i < rawParagraphs.length; i++) {
+        var cleanText = rawParagraphs[i].trim();
+        if (cleanText.length > 0) {
+            paragraphsArray.push(cleanText);
         }
-        // Добавляем готовую страницу в массив
-        pages.push(pageText);
     }
-    // Защита от пустых рассказов
+
+    // Группируем абзацы в "страницы" по 1000 символов
+    var charsLimitPerPage = 1000; // Сколько символов текста влезет на одну страницу
+    var pages = [];
+    var currentPageText = '';
+    
+    for (var i = 0; i < paragraphsArray.length; i++) {
+        var paragraph = paragraphsArray[i];
+        
+        // Если добавление этого абзаца превысит лимит страницы, И это не первый абзац
+        if (currentPageText.length + paragraph.length > charsLimitPerPage && currentPageText.length > 0) {
+            // Сохраняем текущую страницу
+            pages.push(currentPageText);
+            // Начинаем новую страницу с этого абзаца
+            currentPageText = paragraph;
+        } else {
+            // Добавляем абзац к текущей странице (с переносом строки между ними)
+            if (currentPageText.length > 0) {
+                currentPageText += '\n\n' + paragraph;
+            } else {
+                currentPageText = paragraph;
+            }
+        }
+    }
+    
+    // Добавляем последнюю собранную страницу в массив
+    if (currentPageText.length > 0) {
+        pages.push(currentPageText);
+    }
+
+    // Защита от деления на ноль
     if (pages.length === 0) {
         pages.push("Текст рассказа отсутствует.");
     }
 
-    // Группируем абзацы по страницам (сколько абзацев на одной странице)
-    var paragraphsPerPage = 2; 
-    var pages = [];
-    
-    for (var i = 0; i < paragraphsArray.length; i += paragraphsPerPage) {
-        var pageChunk = paragraphsArray.slice(i, i + paragraphsPerPage);
-        pages.push(pageChunk);
-    }
-    
     var currentPage = 0;
     var totalPages = pages.length;
-
-    // Защита от деления на ноль
-    if (totalPages === 0) {
-        totalPages = 1;
-        pages.push(["Текст рассказа отсутствует."]);
-    }
 
     // 5. ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ ИНТЕРФЕЙСА
     var readerBody = document.getElementById('r-body');
@@ -113,21 +116,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 6. ЛОГИКА КНОПКИ "ОТМЕТИТЬ КАК ПРОЧИТАННОЕ"
     if (statsData.finishedIds.indexOf(story.id) !== -1) {
-        // Если уже прочитано — прячем кнопку и таймер
         if (finishContainer) finishContainer.style.display = 'none';
-        if (timerInterval) clearInterval(timerInterval); // Останавливаем таймер
+        if (timerInterval) clearInterval(timerInterval);
     } else {
         if (finishButton) {
             finishButton.addEventListener('click', function() {
-                // 1. Останавливаем таймер
                 if (timerInterval) clearInterval(timerInterval);
                 
-                // 2. Сохраняем точное количество затраченных секунд
                 statsData.finishedIds.push(story.id);
                 statsData.totalSeconds += secondsSpent; 
                 localStorage.setItem('readingStats', JSON.stringify(statsData));
                 
-                // 3. Плавно прячем контейнер с таймером и кнопкой
                 if (finishContainer) {
                     finishContainer.style.opacity = '0';
                     setTimeout(function() { 
@@ -138,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 7. ОТРИСОВКА ЗАГОЛОВКА И МЕТА-ДАННЫХ
+    // 7. ОТРИСОВКА ЗАГОЛОВКА
     document.title = story.title + ' — Чтение';
     document.getElementById('r-title').textContent = story.title;
     document.getElementById('r-meta').textContent = story.genre + ' • ' + story.readTime + ' мин чтения';
@@ -147,10 +146,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var pagesHTML = '';
     
     for (var p = 0; p < pages.length; p++) {
+        // Так как мы вернули переносы строк (\n\n), нам нужно снова превратить их в HTML-абзацы
+        var pageParagraphs = pages[p].split('\n\n');
         var paragraphsHTML = '';
         
-        for (var t = 0; t < pages[p].length; t++) {
-            paragraphsHTML += '<p>' + pages[p][t] + '</p>';
+        for (var t = 0; t < pageParagraphs.length; t++) {
+            paragraphsHTML += '<p>' + pageParagraphs[t] + '</p>';
         }
         
         pagesHTML += '<div class="single-page" data-page="' + p + '">';
@@ -158,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pagesHTML += '</div>';
     }
 
-    // Вставляем всю структуру в контейнер текста
+    // Вставляем всю структуру в контейнер
     readerBody.innerHTML = 
         '<div class="pagination-wrapper">' +
             '<button class="page-btn page-prev" id="btn-prev">' +
@@ -173,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '</div>' +
         '<div class="page-indicator" id="page-indicator">1 / ' + totalPages + '</div>';
 
-    // Получаем ссылки на элементы управления страницами ТОЛЬКО ПОСЛЕ их создания в HTML
+    // Получаем ссылки на элементы управления страницами
     var track = document.getElementById('pages-track');
     var indicator = document.getElementById('page-indicator');
     var buttonPrev = document.getElementById('btn-prev');
@@ -181,13 +182,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 9. ФУНКЦИЯ ОБНОВЛЕНИЯ ВИДА (ПЕРЕЛИСТЫВАНИЕ И ПРОГРЕСС)
     function updateReaderView() {
-        // Сдвигаем ленту с страницами
         track.style.transform = 'translateX(-' + (currentPage * 100) + '%)';
-        
-        // Обновляем текст "1 / 4"
         indicator.textContent = (currentPage + 1) + ' / ' + totalPages;
         
-        // Считаем процент для прогресс-бара вверху
         var progressPercent = 0;
         if (totalPages === 1) {
             progressPercent = 100;
@@ -196,11 +193,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         progressBar.style.width = progressPercent + '%';
         
-        // Сохраняем прогресс в память браузера
         progressData[story.id] = progressPercent;
         localStorage.setItem('readingProgress', JSON.stringify(progressData));
         
-        // Управляем видимостью стрелок
         if (currentPage === 0) {
             buttonPrev.classList.add('disabled');
         } else {
@@ -229,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 11. ПОДДЕРЖКА СВАЙПОВ НА МОБИЛЬНЫХ УСТРОЙСТВАХ
+    // 11. ПОДДЕРЖКА СВАЙПОВ НА МОБИЛЬНЫХ
     var touchStartX = 0;
     readerBody.addEventListener('touchstart', function(e) {
         touchStartX = e.changedTouches[0].screenX;
@@ -237,29 +232,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     readerBody.addEventListener('touchend', function(e) {
         var diff = touchStartX - e.changedTouches[0].screenX;
-        // Если палец сдвинулся больше чем на 50 пикселей
         if (Math.abs(diff) > 50) {
-            if (diff > 0) { 
-                buttonNext.click(); // Свайп влево -> следующая страница
-            } else { 
-                buttonPrev.click(); // Свайп вправо -> предыдущая страница
-            }
+            if (diff > 0) { buttonNext.click(); } 
+            else { buttonPrev.click(); }
         }
     }, {passive: true});
 
-    // 12. ВОССТАНОВЛЕНИЕ СТРАНИЦЫ ПРИ ВОЗВРАЩЕНИИ К РАССКАЗУ
+    // 12. ВОССТАНОВЛЕНИЕ СТРАНИЦЫ ПРИ ВОЗВРАЩЕНИИ
     var savedProgress = progressData[story.id] || 0;
     if (savedProgress > 0 && totalPages > 1) {
-        // Переводим процент обратно в номер страницы
         var targetPage = Math.round((savedProgress / 100) * (totalPages - 1));
-        // Защита: если номер страницы больше общего количества, ставим последнюю
         if (targetPage >= totalPages) {
             targetPage = totalPages - 1;
         }
         currentPage = targetPage;
     }
 
-    // 13. ФУНКЦИЯ ПРИМЕНЕНИЯ НАСТРОЕК (ШРИФТ, ИНТЕРВАЛ, ТЕМА)
+    // 13. ФУНКЦИЯ ПРИМЕНЕНИЯ НАСТРОЕК
     function applyReaderSettings() {
         document.documentElement.setAttribute('data-theme', settings.theme);
         document.getElementById('reader-theme').value = settings.theme;
@@ -270,10 +259,8 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('readerSettings', JSON.stringify(settings));
     }
     
-    // Применяем настройки при загрузке
     applyReaderSettings();
 
-    // Слушатели изменения настроек
     document.getElementById('reader-theme').addEventListener('change', function(e) {
         settings.theme = e.target.value;
         localStorage.setItem('theme', settings.theme);
@@ -281,35 +268,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('font-decrease').addEventListener('click', function() {
-        if (settings.fontSize > 14) { 
-            settings.fontSize -= 2; 
-            applyReaderSettings(); 
-        }
+        if (settings.fontSize > 14) { settings.fontSize -= 2; applyReaderSettings(); }
     });
 
     document.getElementById('font-increase').addEventListener('click', function() {
-        if (settings.fontSize < 28) { 
-            settings.fontSize += 2; 
-            applyReaderSettings(); 
-        }
+        if (settings.fontSize < 28) { settings.fontSize += 2; applyReaderSettings(); }
     });
 
     document.getElementById('line-decrease').addEventListener('click', function() {
-        if (settings.lineHeight > 1.2) { 
-            settings.lineHeight -= 0.2; 
-            applyReaderSettings(); 
-        }
+        if (settings.lineHeight > 1.2) { settings.lineHeight -= 0.2; applyReaderSettings(); }
     });
 
     document.getElementById('line-increase').addEventListener('click', function() {
-        if (settings.lineHeight < 2.5) { 
-            settings.lineHeight += 0.2; 
-            applyReaderSettings(); 
-        }
+        if (settings.lineHeight < 2.5) { settings.lineHeight += 0.2; applyReaderSettings(); }
     });
 
     // 14. ФИНАЛЬНЫЙ ЗАПУСК
-    // Вызываем функцию, чтобы отрисовалась правильная страница и прогрузился интерфейс
     updateReaderView();
 
 }); // Конец DOMContentLoaded
