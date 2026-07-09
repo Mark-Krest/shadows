@@ -1,17 +1,35 @@
+// Ждем полной загрузки структуры страницы
 document.addEventListener('DOMContentLoaded', function() {
     
+    // 1. ЗАГРУЗКА СОСТОЯНИЯ ИЗ ПАМЯТИ БРАУЗЕРА
     var state = {
         currentTheme: localStorage.getItem('theme') || 'light',
         currentFilter: 'Все',
-        stats: JSON.parse(localStorage.getItem('readingStats')) || { totalMinutes: 0, finishedIds: [] },
+        stats: JSON.parse(localStorage.getItem('readingStats')) || { totalSeconds: 0, finishedIds: [] },
         progress: JSON.parse(localStorage.getItem('readingProgress')) || {}
     };
 
+    // 2. ПОЛУЧЕНИЕ ССЫЛОК НА ГЛАВНЫЕ ЭЛЕМЕНТЫ СТРАНИЦЫ
+    // Если хоть один из этих элементов не будет найден в HTML, скрипт остановится и не сломает страницу
     var grid = document.getElementById('stories-grid');
     var filtersContainer = document.getElementById('filters-container');
     var themeSelector = document.getElementById('theme-selector');
     var searchInput = document.getElementById('search-input');
+    var scrollTopBtn = document.getElementById('scroll-to-top-btn');
+    var toggleQuoteBtn = document.getElementById('toggle-quote-btn');
+    var heroQuote = document.getElementById('hero-quote');
+    var quoteToggleText = document.getElementById('quote-toggle-text');
+    var quoteChevron = document.querySelector('.quote-chevron');
 
+    // Проверка, существуют ли нужные элементы на странице
+    if (!grid || !filtersContainer || !themeSelector) {
+        console.error('Критическая ошибка: не найдены основные блоки HTML в index.html');
+        return;
+    }
+
+    // 3. ФУНКЦИИ ОТРИСОВКИ ИНТЕРФЕЙСА
+
+    // Функция отрисовки кнопок жанров
     function renderFilters() {
         filtersContainer.innerHTML = '';
         for (var i = 0; i < GENRES.length; i++) {
@@ -21,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.textContent = genre;
             
             btn.addEventListener('click', function() {
+                // Используем this.textContent, так как genre в цикле будет всегда последним
                 state.currentFilter = this.textContent;
                 renderFilters();
                 renderGrid();
@@ -30,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Функция получения HTML-кода статуса рассказа (Новое/В процессе/Прочитано)
     function getStatusHTML(storyId) {
         if (state.stats.finishedIds.indexOf(storyId) !== -1) {
             return '<div class="status-badge read">Прочитано</div>';
@@ -40,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return '<div class="status-badge">Новое</div>';
     }
 
+    // Запуск процесса обновления сетки (с анимацией исчезновения старых карточек)
     function renderGrid() {
         var existingCards = grid.querySelectorAll('.card');
         
@@ -47,28 +68,38 @@ document.addEventListener('DOMContentLoaded', function() {
             for (var i = 0; i < existingCards.length; i++) {
                 existingCards[i].classList.add('card-exit');
             }
+            // Ждем 300мс, пока карточки растворятся, затем рисуем новые
             setTimeout(buildNewGrid, 300);
         } else {
             buildNewGrid();
         }
     }
 
+    // Непосредственная генерация и вставка карточек в HTML
     function buildNewGrid() {
         grid.innerHTML = '';
         
         var filteredStories = [];
-        var searchText = searchInput.value.toLowerCase().trim();
+        var searchText = '';
         
+        // Безопасно получаем текст из поиска, переводим в нижний регистр
+        if (searchInput) {
+            searchText = searchInput.value.toLowerCase().trim();
+        }
+        
+        // Фильтрация: проверяем соответствие жанру И тексту поиска
         for (var i = 0; i < STORIES.length; i++) {
             var story = STORIES[i];
             var matchGenre = state.currentFilter === 'Все' || story.genre === state.currentFilter;
             var matchSearch = searchText === '' || story.title.toLowerCase().indexOf(searchText) !== -1;
             
+            // Добавляем рассказ только если он подходит под оба условия
             if (matchGenre && matchSearch) {
                 filteredStories.push(story);
             }
         }
 
+        // Создаем HTML для каждой карточки
         for (var i = 0; i < filteredStories.length; i++) {
             var story = filteredStories[i];
             var card = document.createElement('article');
@@ -86,8 +117,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     getStatusHTML(story.id) +
                 '</div>';
 
+            // Сохраняем правильный ID рассказа для функции перехода (чтобы не сбивалось в цикле)
+            var targetUrl = 'reader.html?id=' + story.id;
+            
             function openReader() {
-                window.location.href = 'reader.html?id=' + story.id;
+                window.location.href = targetUrl;
             }
 
             card.addEventListener('click', openReader);
@@ -98,86 +132,84 @@ document.addEventListener('DOMContentLoaded', function() {
             grid.appendChild(card);
         }
 
+        // Если ничего не найдено
         if (filteredStories.length === 0) {
-            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Ничего не найдено.</p>';
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Ничего не найдено по вашему запросу.</p>';
         }
     }
 
+    // Функция применения темы оформления
     function applyTheme() {
         document.documentElement.setAttribute('data-theme', state.currentTheme);
         themeSelector.value = state.currentTheme;
         localStorage.setItem('theme', state.currentTheme);
     }
 
-    // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
+    // 4. НАВЕШИВАНИЕ ОБРАБОТЧИКОВ СОБЫТИЙ
 
+    // Смена темы
     themeSelector.addEventListener('change', function(e) {
         state.currentTheme = e.target.value;
         applyTheme();
     });
 
-    // Поиск в реальном времени
-    searchInput.addEventListener('input', function() {
-        renderGrid();
-    });
+    // Поиск в реальном времени (каждое нажатие клавиши)
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            renderGrid();
+        });
+    }
 
-    // --- СКРЫТИЕ/ПОКАЗ ЦИТАТЫ ---
-    var toggleQuoteBtn = document.getElementById('toggle-quote-btn');
-    var heroQuote = document.getElementById('hero-quote');
-    var quoteToggleText = document.getElementById('quote-toggle-text');
-    var quoteChevron = document.querySelector('.quote-chevron');
+    // Логика скрытия/показа цитаты
     var isQuoteVisible = true;
+    if (toggleQuoteBtn && heroQuote) {
+        toggleQuoteBtn.addEventListener('click', function() {
+            isQuoteVisible = !isQuoteVisible;
+            
+            if (isQuoteVisible) {
+                // Показываем цитату
+                heroQuote.classList.remove('collapsed');
+                heroQuote.style.maxHeight = heroQuote.scrollHeight + 'px';
+                setTimeout(function() { 
+                    heroQuote.style.maxHeight = 'none'; 
+                }, 500);
+                
+                if(quoteToggleText) quoteToggleText.textContent = 'Скрыть цитату';
+                if(quoteChevron) quoteChevron.style.transform = 'rotate(0deg)';
+            } else {
+                // Скрываем цитату
+                heroQuote.style.maxHeight = heroQuote.scrollHeight + 'px';
+                heroQuote.offsetHeight; // Перезагрузка браузера для плавности
+                heroQuote.classList.add('collapsed');
+                heroQuote.style.maxHeight = '0px';
+                
+                if(quoteToggleText) quoteToggleText.textContent = 'Показать цитату';
+                if(quoteChevron) quoteChevron.style.transform = 'rotate(-90deg)';
+            }
+        });
+    }
 
-    toggleQuoteBtn.addEventListener('click', function() {
-        isQuoteVisible = !isQuoteVisible;
-        
-        if (isQuoteVisible) {
-            // РАЗВОРАЧИВАЕМ
-            heroQuote.classList.remove('collapsed'); // Убираем класс, где padding: 0
-            
-            // Задаем точную текущую высоту, чтобы анимация стартовала оттуда
-            heroQuote.style.maxHeight = heroQuote.scrollHeight + 'px';
-            
-            // После завершения анимации убираем ограничение высоты
-            setTimeout(function() { 
-                heroQuote.style.maxHeight = 'none'; 
-            }, 500);
-            
-            quoteToggleText.textContent = 'Скрыть цитату';
-            quoteChevron.style.transform = 'rotate(0deg)';
-        } else {
-            // СВОРАЧИВАЕМ
-            // Фиксируем текущую высоту
-            heroQuote.style.maxHeight = heroQuote.scrollHeight + 'px';
-            // Принудительно перерисовываем браузер, чтобы он зафиксировал высоту
-            heroQuote.offsetHeight; 
-            
-            // Добавляем класс (обнуляет padding и делает текст прозрачным) и задаем 0 высоты
-            heroQuote.classList.add('collapsed');
-            heroQuote.style.maxHeight = '0px';
-            
-            quoteToggleText.textContent = 'Показать цитату';
-            quoteChevron.style.transform = 'rotate(-90deg)';
-        }
-    });
+    // Логика кнопки "Наверх"
+    if (scrollTopBtn) {
+        window.addEventListener('scroll', function() {
+            if (document.body.scrollTop > 400 || document.documentElement.scrollTop > 400) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        });
 
-    // --- КНОПКА "НАВЕРХ" ---
-    var scrollTopBtn = document.getElementById('scroll-to-top-btn');
-    
-    window.addEventListener('scroll', function() {
-        if (document.body.scrollTop > 400 || document.documentElement.scrollTop > 400) {
-            scrollTopBtn.classList.add('visible');
-        } else {
-            scrollTopBtn.classList.remove('visible');
-        }
-    });
+        scrollTopBtn.addEventListener('click', function() {
+            window.scrollTo({ 
+                top: 0, 
+                behavior: 'smooth' 
+            });
+        });
+    }
 
-    scrollTopBtn.addEventListener('click', function() {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-
-    // --- ЗАПУСК ---
+    // 5. ПЕРВОНАЧАЛЬНЫЙ ЗАПУСК
     applyTheme();
     renderFilters();
     renderGrid();
-});
+
+}); // Конец DOMContentLoaded
